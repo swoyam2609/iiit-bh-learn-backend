@@ -43,15 +43,9 @@ async def uploadCourse(courseName: str, courseFile: UploadFile = File(...)):
     async with aiofiles.open(filePath, "wb") as f:
         content = await courseFile.read()
         await f.write(content)
-
     coursePath = f"./files/{courseName}"
-    os.makedirs(coursePath, exist_ok=True)  # Ensure the directory exists
-
-    # Extract the ZIP file
+    os.makedirs(coursePath, exist_ok=True)
     with zipfile.ZipFile(filePath, 'r') as zipRef:
         zipRef.extractall(coursePath)
-
-    # Remove the ZIP file
     os.remove(filePath)
-
     return JSONResponse(content={"message": "course uploaded"})
