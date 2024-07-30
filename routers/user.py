@@ -91,28 +91,11 @@ async def getUser(username: str = Depends(pass_jwt.get_current_user)):
             "username":user["username"],
             "email": user["email"],
             "name": user["name"],
-            "verify": user["verified"]
+            "phone": user["phone"],
         }
         return JSONResponse(content=content, status_code=200)
     else:
         return JSONResponse(content={"message": "User not found"}, status_code=404)
-    
-@router.put("/user/verify", tags=["User"])
-async def verify_user(username: str = Depends(pass_jwt.get_current_user)):
-    user = mongo.db.users.find_one({"username": username})
-    if user:
-        mongo.db.users.update_one({"username": username}, {"$set": {"verified": True}})
-        return JSONResponse(content={"message":"policies agreed"}, status_code=200)
-    else:
-        return JSONResponse(content={"message": "User not found"}, status_code=404)
-    
-@router.post("/user/waitlist", tags=["User"])
-async def add_to_waitlist(email: str):
-    if mongo.db.waitlist.find_one({"email": email}):
-        return JSONResponse(content={"message": "Email already exists in waitlist"}, status_code=400)
-    else:
-        mongo.db.waitlist.insert_one({"email": email})
-        return JSONResponse(content={"message": "Email added to waitlist successfully"}, status_code=201)
     
 @router.post("/user/forgetpassword", tags=["User"])
 async def forget_password(email: str):
