@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from dependencies import pass_jwt, mongo
 import os
 from pathlib import Path
-import zipfile
-import aiofiles
+import key
+from datetime import datetime
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ async def browseCourses(username: str = Depends(pass_jwt.get_current_user)):
     if user is None:
         return JSONResponse(content={"message":"unauthenticated"})
     else:
-        courses = os.listdir("./files")
+        courses = mongo.db.courses.find({})
         return JSONResponse(content={"courses": courses})
     
 @router.get("/course", tags=["Course"])
@@ -38,14 +38,13 @@ async def playCourse(courseName: str, fileName: str, username: str = Depends(pas
         return StreamingResponse(videoFile, media_type="video/mp4")
     
 @router.post("/uploadcourse", tags=["Course"])
-async def uploadCourse(courseName: str, courseFile: UploadFile = File(...)):
-    filePath = f"./files/temp/{courseFile.filename}"
-    async with aiofiles.open(filePath, "wb") as f:
-        content = await courseFile.read()
-        await f.write(content)
-    coursePath = f"./files/{courseName}"
-    os.makedirs(coursePath, exist_ok=True)
-    with zipfile.ZipFile(filePath, 'r') as zipRef:
-        zipRef.extractall(coursePath)
-    os.remove(filePath)
+async def uploadCourse(courseName: str, playlistId: str, pin:int):
+    if(pin!=key.KEY):
+        return JSONResponse(content={"message":"unauthorized"})
+    data = {
+        "courseName": courseName,
+        "playlistId": playlistId,
+        "dateUploaded": datetime.today().strftime('%d%m%Y')
+    }
+    mongo.db.courses.insert_one(data)
     return JSONResponse(content={"message": "course uploaded"})
